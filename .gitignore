@@ -1,0 +1,19 @@
+# 설정 (토큰·키가 들어간다)
+.env
+.env.local
+
+# 빌드 산출물
+#
+# 앞의 /는 "루트의 그것만"을 뜻한다. 이게 없으면 cmd/terminal-agent/
+# 디렉터리까지 제외돼 진입점 소스가 통째로 빠진다.
+dist/
+/terminal-agent
+*.exe
+
+# 로그
+*.log
+
+# 에디터·OS
+.DS_Store
+.idea/
+.vscode/
