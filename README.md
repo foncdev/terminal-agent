@@ -195,6 +195,9 @@ API는 같으므로 클라이언트가 어떻게 그릴지만 정하면 된다.
 공유기 안에 있는 기기에 밖에서 붙으려면 중계 서버를 둔다. 에이전트가 **자기
 쪽에서 나가서** 붙으므로 포트포워딩이 필요 없다.
 
+[relay-service](https://github.com/foncdev/relay-service)가 그 역할을 한다.
+Docker로 띄우면 브라우저 관리 UI까지 함께 들어 있다.
+
 ```bash
 RELAY_URL=ws://<중계서버>:4100/terminal-agent
 RELAY_TERMINAL_TOKEN=<중계 서버와 맞춘 값>
@@ -422,14 +425,23 @@ PTY 테스트는 윈도우에서 건너뛴다. 실기기에서 확인해야 한�
 
 ---
 
-## 관련 링크
+## 관련 프로젝트
 
-- [xterm.js](https://xtermjs.org/) — 브라우저 터미널 렌더러
+- **[relay-service](https://github.com/foncdev/relay-service)** — 밖에서 붙을 때
+  쓰는 중계 서버. 브라우저 관리 UI가 함께 들어 있어, 이 agent를 붙이면
+  터미널 탭에서 바로 쓸 수 있다. Docker 이미지로 배포된다
+
+### 쓰는 것
+
 - [creack/pty](https://github.com/creack/pty) — unix PTY
 - [UserExistsError/conpty](https://github.com/UserExistsError/conpty) — Windows ConPTY
 - [charmbracelet/bubbletea](https://github.com/charmbracelet/bubbletea) — TUI 프레임워크
 - [charmbracelet/x/vt](https://github.com/charmbracelet/x) — 터미널 에뮬레이터
 - [coder/websocket](https://github.com/coder/websocket) — WebSocket
+
+### 클라이언트 만들 때
+
+- [xterm.js](https://xtermjs.org/) — 브라우저 터미널 렌더러
 
 ---
 
