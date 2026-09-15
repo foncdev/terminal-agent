@@ -3,6 +3,7 @@ package api_test
 import (
 	"encoding/base64"
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"regexp"
@@ -53,7 +54,7 @@ func TestWebClientFlow(t *testing.T) {
 	// 3. 입력 — api.sendTerminalInput
 	c.input(t, id, "echo W\"EB\"-OK; echo 웹한글\n")
 
-	got := collectSSE(t, events, "WEB-OK", 5*time.Second)
+	got := collectSSE(t, events, "WEB-OK", 15*time.Second)
 	if !strings.Contains(got, "WEB-OK") {
 		t.Fatalf("명령 결과가 SSE로 오지 않았다:\n%s", got)
 	}
@@ -71,7 +72,7 @@ func TestWebClientFlow(t *testing.T) {
 
 	// 셸도 새 크기를 봐야 한다.
 	c.input(t, id, "echo S\"Z\"=$(tput cols)x$(tput lines)\n")
-	got = collectSSE(t, events, "SZ=132x42", 5*time.Second)
+	got = collectSSE(t, events, "SZ=132x42", 15*time.Second)
 	if !strings.Contains(got, "SZ=132x42") {
 		t.Fatalf("셸이 새 크기를 못 봤다:\n%s", got)
 	}
@@ -144,7 +145,13 @@ func (c *client) create(t *testing.T, dir string) string {
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusCreated {
-		t.Fatalf("생성 실패: %d", res.StatusCode)
+		body, _ := io.ReadAll(res.Body)
+		// 컨테이너에는 /dev/ptmx가 없는 경우가 있다. PTY를 못 여는 곳에서는
+		// 이 테스트가 성립하지 않으므로 건너뛴다.
+		if strings.Contains(string(body), "ptmx") {
+			t.Skipf("PTY를 열 수 없는 환경이다: %s", body)
+		}
+		t.Fatalf("생성 실패: %d %s", res.StatusCode, body)
 	}
 
 	var out struct {

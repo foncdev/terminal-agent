@@ -1,6 +1,8 @@
 package terminal
 
 import (
+	"errors"
+	"io/fs"
 	"regexp"
 	"runtime"
 	"strings"
@@ -60,6 +62,11 @@ func newTestTerminal(t *testing.T, o CreateOptions) (*Registry, *Terminal) {
 
 	term, err := r.Create(o)
 	if err != nil {
+		// 컨테이너에는 /dev/ptmx가 없는 경우가 있다. PTY를 못 여는 곳에서는
+		// 이 테스트가 성립하지 않으므로 건너뛴다. 다른 실패는 그대로 알린다.
+		if errors.Is(err, fs.ErrNotExist) || strings.Contains(err.Error(), "/dev/ptmx") {
+			t.Skipf("PTY를 열 수 없는 환경이다: %v", err)
+		}
 		t.Fatalf("터미널 생성 실패: %v", err)
 	}
 	return r, term
