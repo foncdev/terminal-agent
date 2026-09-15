@@ -15,6 +15,8 @@ import (
 	"context"
 	"errors"
 	"io"
+	"os"
+	"strings"
 )
 
 // ErrUnsupported는 이 플랫폼에서 PTY를 쓸 수 없을 때 반환된다.
@@ -72,7 +74,36 @@ func (o Options) normalize() Options {
 	if len(o.Argv) == 0 {
 		o.Argv = []string{DefaultShell()}
 	}
+	o.Env = withTerm(o.Env)
 	return o
+}
+
+// TERM이 없을 때 쓸 값. 웹 클라이언트가 xterm.js라 이걸 맞춘다.
+const defaultTerm = "xterm-256color"
+
+// withTerm은 TERM이 없으면 채워 넣는다.
+//
+// 여기는 의사 터미널이라 붙는 프로그램은 TERM이 있다고 본다. 없으면
+// tput이 "No value for $TERM"으로 죽고, vi 같은 것은 화면을 그리지
+// 못한다. 서비스·cron처럼 터미널 없이 뜬 부모에서는 이 값이 비어 있다.
+//
+// 이미 지정돼 있으면 건드리지 않는다. 부르는 쪽 선택이 우선이다.
+func withTerm(env []string) []string {
+	// 비어 있으면 부모 환경을 물려받는다는 뜻이다. 부모에 TERM이 있으면
+	// 그대로 두고, 없을 때만 전체를 복사해 채운다.
+	if len(env) == 0 {
+		if os.Getenv("TERM") != "" {
+			return env
+		}
+		return append(os.Environ(), "TERM="+defaultTerm)
+	}
+
+	for _, kv := range env {
+		if name, _, ok := strings.Cut(kv, "="); ok && name == "TERM" {
+			return env
+		}
+	}
+	return append(env, "TERM="+defaultTerm)
 }
 
 // Start는 의사 터미널을 띄운다. 구현은 플랫폼별 파일에 있다.
