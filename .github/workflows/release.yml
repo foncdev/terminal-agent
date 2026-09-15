@@ -1,0 +1,76 @@
+# 태그를 붙이면 릴리스를 만들고 바이너리를 올린다.
+#
+#   git tag v0.1.0
+#   git push origin v0.1.0
+#
+# install.sh가 여기 올라간 파일을 받아간다. 이름 규칙을 바꾸면
+# Makefile과 install.sh를 함께 고쳐야 한다.
+
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  # 실패했을 때 태그를 다시 붙이지 않고 돌릴 수 있게 한다.
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 릴리스할 태그 (예 v0.1.0)
+        required: true
+
+permissions:
+  # 릴리스를 만들려면 쓰기 권한이 필요하다.
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # make dist가 git describe로 버전을 뽑는다. 전체 이력이 필요하다.
+          fetch-depth: 0
+          ref: ${{ inputs.tag || github.ref }}
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      # 깨진 것을 릴리스하지 않는다.
+      - name: 검사
+        run: |
+          go vet ./...
+          go test ./... -timeout 300s
+
+      - name: 빌드
+        run: make dist
+
+      - name: 버전 확인
+        run: |
+          tar -xzf dist/terminal-agent_linux_amd64.tar.gz -C /tmp
+          got=$(/tmp/terminal-agent --version)
+          echo "$got"
+          # 태그가 박혔는지 본다. "dev"로 나오면 주입이 안 된 것이다.
+          case "$got" in
+            *" dev "*) echo "버전이 주입되지 않았습니다"; exit 1 ;;
+          esac
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.tag || github.ref_name }}
+          files: |
+            dist/*.tar.gz
+            dist/checksums.txt
+          generate_release_notes: true
+          body: |
+            ## 설치
+
+            ```bash
+            curl -fsSL https://raw.githubusercontent.com/foncdev/terminal-agent/main/install.sh | sh
+            ```
+
+            윈도우는 아래 `terminal-agent_windows_amd64.tar.gz`를 받아 압축을 푼다.
+
+            체크섬은 `checksums.txt`에 있다.

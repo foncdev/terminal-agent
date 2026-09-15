@@ -1,5 +1,8 @@
 # terminal-agent
 
+[![CI](https://github.com/foncdev/terminal-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/foncdev/terminal-agent/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/foncdev/terminal-agent)](https://github.com/foncdev/terminal-agent/releases)
+
 **터미널을 어디서든 이어 쓰는 에이전트.** 데스크톱에서 쓰던 셸을 브라우저나
 스마트 안경에서 그대로 이어서 본다.
 
@@ -125,13 +128,24 @@ dist/
 
 ### 릴리스
 
+태그를 밀면 GitHub Actions가 알아서 만든다.
+
 ```bash
 git tag v0.1.0
-make dist                 # 태그가 버전으로 박힌다
+git push origin v0.1.0
+```
+
+검사 → 다섯 플랫폼 빌드 → 릴리스 생성 → 바이너리와 체크섬 업로드까지
+자동이다. `install.sh`가 여기 올라간 파일을 받아간다.
+
+손으로 하려면:
+
+```bash
+make dist
 gh release create v0.1.0 dist/*.tar.gz dist/checksums.txt
 ```
 
-버전은 `git describe`에서 가져오고 `-X main.version`으로 주입된다.
+버전은 `git describe`에서 가져와 `-X main.version`으로 주입된다.
 `terminal-agent --version`으로 확인할 수 있다.
 
 ---
