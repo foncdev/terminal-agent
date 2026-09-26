@@ -43,6 +43,15 @@ func (s *Server) routes() {
 	s.mux.HandleFunc("POST /terminals/{id}/input", s.handleInput)
 	s.mux.HandleFunc("POST /terminals/{id}/resize", s.handleResize)
 
+	// 시스템 상태. 터미널을 만들지 않고도 읽을 수 있다.
+	// 안경이 top·ps를 눈으로 훑는 대신 이걸 쓴다.
+	s.mux.HandleFunc("GET /sys/summary", s.handleSysSummary)
+	s.mux.HandleFunc("GET /sys/procs", s.handleSysProcs)
+
+	// 미리 등록한 명령을 한 번 실행한다. 터미널을 만들지 않는다.
+	s.mux.HandleFunc("POST /run", s.handleRun)
+	s.mux.HandleFunc("POST /run/inspect", s.handleInspect)
+
 	// 출력은 두 가지로 받을 수 있다.
 	//  - WS : 양방향. 입력까지 같이 보낼 수 있어 지연이 낮다.
 	//  - SSE: 단방향. 입력은 POST로 따로 보낸다. 중계 서버를 태우기 쉽다.
