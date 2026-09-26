@@ -88,8 +88,16 @@ func Procs(ctx context.Context, n int) ([]Proc, error) {
 		return procsWindows(ctx, n)
 	}
 
-	// -r은 CPU 내림차순. macOS와 리눅스가 함께 받는다.
-	out, err := run(ctx, "ps", "-Ao", "pid,pcpu,pmem,comm", "-r")
+	// CPU 내림차순. 맥(BSD ps)은 -r, 리눅스(procps)는 --sort를 쓴다.
+	// 리눅스 ps는 -r을 모르는 옵션으로 보고 exit 1로 끝나서, CI(ubuntu)에서
+	// 프로세스 목록이 통째로 실패했다.
+	args := []string{"-Ao", "pid,pcpu,pmem,comm"}
+	if runtime.GOOS == "linux" {
+		args = append(args, "--sort=-pcpu")
+	} else {
+		args = append(args, "-r")
+	}
+	out, err := run(ctx, "ps", args...)
 	if err != nil {
 		return nil, err
 	}
