@@ -46,8 +46,10 @@ func (s *Server) handleWS(w http.ResponseWriter, r *http.Request) {
 	}
 
 	conn, err := websocket.Accept(w, r, &websocket.AcceptOptions{
-		// 브라우저·안경앱이 어느 출처에서 올지 정해져 있지 않다.
-		// 인증은 위의 withAuth가 맡는다.
+		// 출처 검사는 앞의 withOrigin이 TERMINAL_CORS_ORIGINS로 이미 했다.
+		// 허용된 오리진만 여기까지 오며, 파일에서 연 안경앱처럼 Origin이
+		// "null"인 경우도 목록에 적어야 들어온다. 여기서 다시 보면 목록에
+		// 넣은 오리진까지 막히므로 건너뛴다.
 		InsecureSkipVerify: true,
 	})
 	if err != nil {

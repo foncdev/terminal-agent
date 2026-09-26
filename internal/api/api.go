@@ -4,7 +4,9 @@ package api
 import (
 	"encoding/json"
 	"log"
+	"net"
 	"net/http"
+	"slices"
 	"strings"
 
 	"github.com/foncdev/terminal-agent/internal/config"
@@ -60,22 +62,56 @@ func (s *Server) routes() {
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	s.withCORS(s.withAuth(s.mux)).ServeHTTP(w, r)
+	s.withOrigin(s.withHost(s.withAuth(s.mux))).ServeHTTP(w, r)
 }
 
-// withCORS는 브라우저에서 바로 붙을 수 있게 한다.
-// 안경앱이 file://에서 도는 경우가 있어 Origin을 그대로 되비춘다.
-func (s *Server) withCORS(next http.Handler) http.Handler {
+// withOrigin은 브라우저에서 온 요청을 허용 목록으로 거른다.
+//
+// 이 서비스는 셸을 연다. 예전에는 Origin을 그대로 되비춰서, 키가 없으면
+// 사용자가 연 아무 웹페이지나 /run이나 터미널 입력으로 명령을 돌릴 수
+// 있었다. 정상 호출자(relaylink, 콘솔)는 브라우저가 아니라 Origin을 싣지
+// 않는다. 브라우저는 교차 출처 POST와 WebSocket에 늘 Origin을 싣는다.
+func (s *Server) withOrigin(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if origin := r.Header.Get("Origin"); origin != "" {
-			w.Header().Set("Access-Control-Allow-Origin", origin)
-			w.Header().Set("Vary", "Origin")
+		origin := r.Header.Get("Origin")
+		if origin == "" {
+			next.ServeHTTP(w, r)
+			return
 		}
+		if !slices.Contains(s.cfg.CORSOrigins, origin) {
+			writeError(w, http.StatusForbidden, "origin_not_allowed",
+				"허용되지 않은 오리진입니다 (TERMINAL_CORS_ORIGINS에 추가): "+origin)
+			return
+		}
+		w.Header().Set("Access-Control-Allow-Origin", origin)
+		w.Header().Set("Vary", "Origin")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, x-api-key")
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS")
-
 		if r.Method == http.MethodOptions {
 			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+// withHost는 키가 없을 때 이 기기 주소로 온 요청만 받는다.
+//
+// DNS 리바인딩은 공격자 도메인을 127.0.0.1로 바꿔 같은 출처인 척하므로
+// Origin 검사를 지난다. 그때 Host는 공격자 도메인으로 남는다.
+func (s *Server) withHost(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if s.cfg.APIKey != "" {
+			next.ServeHTTP(w, r)
+			return
+		}
+		host := r.Host
+		if h, _, err := net.SplitHostPort(host); err == nil {
+			host = h
+		}
+		if !config.IsLoopback(host) {
+			writeError(w, http.StatusForbidden, "host_not_allowed",
+				"TERMINAL_API_KEY 없이는 이 기기 주소로만 접속할 수 있습니다.")
 			return
 		}
 		next.ServeHTTP(w, r)

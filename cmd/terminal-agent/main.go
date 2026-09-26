@@ -58,6 +58,14 @@ func main() {
 		os.Exit(1)
 	}
 
+	// 키 없이 밖에 열면 같은 네트워크의 누구나 셸을 연다. 경고로 끝내면
+	// 켜진 채로 두게 되므로 아예 뜨지 않는다.
+	if cfg.APIKey == "" && !cfg.LocalOnly() {
+		log.Printf("[terminal] TERMINAL_HOST=%s로 열려면 TERMINAL_API_KEY가 필요합니다.", cfg.Host)
+		log.Println("[terminal] openssl rand -hex 24 로 만든 값을 .env에 넣거나, TERMINAL_HOST=127.0.0.1로 두세요.")
+		os.Exit(1)
+	}
+
 	reg := terminal.NewRegistry(terminal.RegistryOptions{
 		Max:         cfg.MaxTerminals,
 		Scrollback:  cfg.Scrollback,
@@ -235,7 +243,12 @@ func banner(cfg config.Config, headless bool) {
 		log.Println("[terminal] 경고: 이 시스템에서는 PTY를 쓸 수 없습니다 (윈도우는 10 1809 이상 필요)")
 	}
 	if cfg.APIKey == "" {
-		log.Println("[terminal] 경고: TERMINAL_API_KEY가 없습니다. 인증 없이 열립니다.")
+		log.Println("[terminal] TERMINAL_API_KEY가 없습니다. 이 기기 주소로만 받고, 브라우저 요청은 막습니다.")
+	} else if len(cfg.APIKey) < 24 {
+		log.Println("[terminal] 경고: TERMINAL_API_KEY가 짧습니다. openssl rand -hex 24 로 만든 값을 쓰세요.")
+	}
+	if cfg.RelayToken != "" && len(cfg.RelayToken) < 24 {
+		log.Println("[terminal] 경고: RELAY_TERMINAL_TOKEN이 짧습니다. openssl rand -hex 24 로 만든 값을 쓰세요.")
 	}
 	if !cfg.LocalOnly() {
 		log.Printf("[terminal] 경고: %s 로 열려 있습니다. 셸을 여는 서비스이니 외부 노출을 피하세요.", cfg.Host)

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"mime"
 	"net/http"
 	"path/filepath"
 	"runtime"
@@ -209,8 +210,14 @@ func (s *Server) lookup(w http.ResponseWriter, r *http.Request) (*terminal.Termi
 
 // decodeJSON은 본문을 읽는다. 빈 본문은 기본값으로 본다.
 func decodeJSON(r *http.Request, v any) error {
-	if r.Body == nil {
+	if r.Body == nil || r.ContentLength == 0 {
 		return nil
+	}
+	// 본문은 JSON으로만 받는다. text/plain·폼은 브라우저가 사전 확인 없이
+	// 다른 사이트로 보낼 수 있는 형식이라, 그걸 JSON으로 읽어주면 오리진
+	// 검사를 피한 요청으로도 명령이 돌았다.
+	if mt, _, _ := mime.ParseMediaType(r.Header.Get("Content-Type")); mt != "application/json" {
+		return errors.New("Content-Type은 application/json이어야 합니다")
 	}
 	dec := json.NewDecoder(http.MaxBytesReader(nil, r.Body, 1<<20))
 	dec.DisallowUnknownFields()

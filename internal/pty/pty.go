@@ -17,6 +17,8 @@ import (
 	"io"
 	"os"
 	"strings"
+
+	"github.com/foncdev/terminal-agent/internal/secretenv"
 )
 
 // ErrUnsupported는 이 플랫폼에서 PTY를 쓸 수 없을 때 반환된다.
@@ -73,6 +75,11 @@ func (o Options) normalize() Options {
 	}
 	if len(o.Argv) == 0 {
 		o.Argv = []string{DefaultShell()}
+	}
+	// 비어 있으면 부모 환경을 물려준다. 이 서비스의 키는 빼고 준다.
+	// 셸에서 env 한 번이면 TERMINAL_API_KEY가 보였다. secretenv 참고.
+	if len(o.Env) == 0 {
+		o.Env = secretenv.Environ()
 	}
 	o.Env = withTerm(o.Env)
 	return o

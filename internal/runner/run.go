@@ -9,6 +9,8 @@ import (
 	"runtime"
 	"strings"
 	"time"
+
+	"github.com/foncdev/terminal-agent/internal/secretenv"
 )
 
 // Result는 한 번 실행한 결과다.
@@ -28,6 +30,9 @@ const maxOutput = 16 * 1024
 
 // 기본 제한 시간. 오래 걸리는 것은 스니펫으로 맞지 않다.
 const defaultTimeout = 20 * time.Second
+
+// 시간이 다 된 뒤 출력 파이프가 닫히기를 기다리는 최대 시간.
+const waitDelay = time.Second
 
 var ErrEmpty = errors.New("실행할 명령이 없습니다")
 
@@ -81,6 +86,14 @@ func Run(ctx context.Context, command, dir string, timeout time.Duration) (Resul
 	// 입력을 막는다. 열어두면 무언가를 묻는 명령이 영원히 기다린다.
 	c.Stdin = nil
 
+	// 이 서비스의 키는 빼고 넘긴다. secretenv 참고.
+	c.Env = secretenv.Environ()
+
+	// 시간이 다 되면 셸이 남긴 자식까지 끝낸다. 그래도 파이프를 붙잡는
+	// 것이 있으면 잠깐만 기다리고 출력 대기를 끊는다.
+	ownGroup(c)
+	c.WaitDelay = waitDelay
+
 	started := time.Now()
 	err := c.Run()
 	took := time.Since(started)
@@ -103,6 +116,11 @@ func Run(ctx context.Context, command, dir string, timeout time.Duration) (Resul
 	// 종료 코드가 0이 아닌 것은 실패가 아니라 결과다. grep이 못 찾으면
 	// 1을 주는데, 그걸 오류로 올리면 출력을 보여줄 수 없다.
 	var ee *exec.ExitError
+	// 셸은 끝났는데 뒤에 띄운 것(`… &`)이 파이프를 붙잡고 있었다.
+	// WaitDelay가 대기를 끊은 것이지 명령이 실패한 것은 아니다.
+	if errors.Is(err, exec.ErrWaitDelay) {
+		return res, nil
+	}
 	if err != nil && !errors.As(err, &ee) {
 		return res, err
 	}

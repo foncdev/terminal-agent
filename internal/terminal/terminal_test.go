@@ -265,3 +265,26 @@ func TestSlowSubscriberDoesNotBlock(t *testing.T) {
 		t.Fatal("느린 구독자 때문에 빠른 구독자가 막혔다")
 	}
 }
+
+// 셸 환경에 이 서비스의 키가 없는지 본다. 예전에는 env 한 번이면
+// TERMINAL_API_KEY와 RELAY_TERMINAL_TOKEN이 그대로 보였다.
+func TestTerminalHidesServiceSecrets(t *testing.T) {
+	t.Setenv("TERMINAL_API_KEY", "probe-api-secret")
+	t.Setenv("RELAY_TERMINAL_TOKEN", "probe-relay-secret")
+	t.Setenv("KEEP_ME", "visible-value")
+	_, term := newTestTerminal(t, CreateOptions{Dir: t.TempDir()})
+
+	ch, cancel := term.Subscribe(false)
+	defer cancel()
+
+	if err := term.Write([]byte("env; echo D\"ONE\"-ENV\n")); err != nil {
+		t.Fatal(err)
+	}
+	got := clean(collect(t, ch, "DONE-ENV", 1, 5*time.Second))
+	if strings.Contains(got, "probe-api-secret") || strings.Contains(got, "probe-relay-secret") {
+		t.Fatalf("셸 환경에 키가 보인다:\n%s", got)
+	}
+	if !strings.Contains(got, "visible-value") {
+		t.Fatalf("다른 환경변수까지 사라졌다:\n%s", got)
+	}
+}

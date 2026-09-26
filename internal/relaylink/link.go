@@ -18,6 +18,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -240,6 +241,38 @@ func (l *Link) handle(ctx context.Context, msg serverMessage) {
 	}
 }
 
+// localURL은 relay가 넘긴 경로를 이 기기의 API 주소로 바꾼다.
+//
+// 예전에는 문자열을 이어 붙여서, "@evil.example/x" 같은 경로가 오면
+// http://127.0.0.1:4200@evil.example/x — 즉 다른 호스트로 API 키 헤더를
+// 실어 보냈다. 경로는 /로 시작해야 하고, 풀어낸 주소의 호스트가 이 기기와
+// 같아야 한다. ..은 정규화해 본 뒤 relay가 중계하는 경로 안인지 확인한다.
+func (l *Link) localURL(path string) (string, error) {
+	if !strings.HasPrefix(path, "/") || strings.HasPrefix(path, "//") {
+		return "", fmt.Errorf("잘못된 경로: %q", path)
+	}
+	base, err := url.Parse(l.local)
+	if err != nil {
+		return "", err
+	}
+	ref, err := url.Parse(path)
+	if err != nil {
+		return "", err
+	}
+	u := base.ResolveReference(ref)
+	if u.Scheme != base.Scheme || u.Host != base.Host || u.User != nil {
+		return "", fmt.Errorf("이 기기 밖을 가리키는 경로: %q", path)
+	}
+	if !relayedPath.MatchString(u.Path) {
+		return "", fmt.Errorf("중계하지 않는 경로: %q", path)
+	}
+	return u.String(), nil
+}
+
+// relayedPath는 relay-service가 이쪽으로 넘기는 경로다. relay-service의
+// forward 목록(/terminals·/sys·/run)과 맞춘다.
+var relayedPath = regexp.MustCompile(`^/(terminals|sys|run)(/|$)`)
+
 // proxyRequest는 서버가 넘긴 요청을 자기 API로 호출하고 결과를 돌려준다.
 func (l *Link) proxyRequest(ctx context.Context, msg serverMessage) {
 	reqCtx, cancel := context.WithTimeout(ctx, 25*time.Second)
@@ -250,7 +283,12 @@ func (l *Link) proxyRequest(ctx context.Context, msg serverMessage) {
 		body = strings.NewReader(msg.Body)
 	}
 
-	req, err := http.NewRequestWithContext(reqCtx, msg.Method, l.local+msg.Path, body)
+	target, err := l.localURL(msg.Path)
+	if err != nil {
+		l.send(map[string]any{"type": "error", "id": msg.ID, "message": err.Error()})
+		return
+	}
+	req, err := http.NewRequestWithContext(reqCtx, msg.Method, target, body)
 	if err != nil {
 		l.send(map[string]any{"type": "error", "id": msg.ID, "message": err.Error()})
 		return
@@ -297,7 +335,11 @@ func (l *Link) openStream(ctx context.Context, id, path string) {
 		l.send(map[string]any{"type": "stream_chunk", "id": id, "chunk": "", "done": true})
 	}()
 
-	req, err := http.NewRequestWithContext(streamCtx, http.MethodGet, l.local+path, nil)
+	target, err := l.localURL(path)
+	if err != nil {
+		return
+	}
+	req, err := http.NewRequestWithContext(streamCtx, http.MethodGet, target, nil)
 	if err != nil {
 		return
 	}

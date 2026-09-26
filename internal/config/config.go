@@ -5,6 +5,7 @@ package config
 
 import (
 	"bufio"
+	"net"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -18,7 +19,15 @@ type Config struct {
 	Port int
 
 	// APIKey가 비어 있으면 인증을 걸지 않는다. 로컬 전용일 때만 그렇게 쓴다.
+	// 비어 있으면 이 기기 주소로 온 요청만 받고, 밖으로 열면 시작하지 않는다.
 	APIKey string
+
+	// CORSOrigins는 브라우저에서 직접 부를 수 있는 오리진이다. 기본은 없다.
+	//
+	// 웹·안경은 relay-service를 거쳐 오고, relaylink는 Origin을 싣지 않는다.
+	// 예전에는 어느 오리진이든 되비춰, 키가 없으면 사용자가 연 아무
+	// 웹페이지나 이 기기에서 명령을 돌릴 수 있었다.
+	CORSOrigins []string
 
 	// AllowedRoots는 터미널을 띄울 수 있는 디렉터리다.
 	//
@@ -52,6 +61,7 @@ func Load() Config {
 		Host:         str("TERMINAL_HOST", "127.0.0.1"),
 		Port:         num("TERMINAL_PORT", 4200),
 		APIKey:       str("TERMINAL_API_KEY", ""),
+		CORSOrigins:  list(str("TERMINAL_CORS_ORIGINS", "")),
 		AllowedRoots: roots(str("TERMINAL_ALLOWED_ROOTS", defaultRoot())),
 		Shell:        str("TERMINAL_SHELL", ""),
 		MaxTerminals: num("TERMINAL_MAX", 3),
@@ -73,9 +83,34 @@ func hostname() string {
 }
 
 // LocalOnly는 루프백에만 열려 있는지 본다.
-// 밖으로 열려 있는데 키가 없으면 경고해야 한다.
+// 밖으로 열려 있는데 키가 없으면 시작하지 않는다.
 func (c Config) LocalOnly() bool {
-	return c.Host == "127.0.0.1" || c.Host == "localhost" || c.Host == "::1"
+	return IsLoopback(c.Host)
+}
+
+// IsLoopback은 이 기기 안에서만 닿는 주소인지 본다.
+//
+// 이름이 127.로 시작하는지만 보면 127.evil.com 같은 이름이 통과한다.
+// DNS 리바인딩이 바로 그런 이름을 127.0.0.1로 돌려 쓰므로, 이름은
+// localhost만 받고 나머지는 IP로 풀어서 본다.
+func IsLoopback(host string) bool {
+	h := strings.ToLower(strings.Trim(host, "[]"))
+	if h == "localhost" {
+		return true
+	}
+	ip := net.ParseIP(h)
+	return ip != nil && ip.IsLoopback()
+}
+
+// list는 쉼표로 나눈 값을 자른다.
+func list(raw string) []string {
+	var out []string
+	for _, v := range strings.Split(raw, ",") {
+		if v = strings.TrimSpace(v); v != "" {
+			out = append(out, v)
+		}
+	}
+	return out
 }
 
 // LogPath는 콘솔 화면이 떠 있는 동안 로그를 적을 곳이다.

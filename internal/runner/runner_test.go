@@ -2,6 +2,8 @@ package runner
 
 import (
 	"context"
+	"os"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"testing"
@@ -156,5 +158,60 @@ func TestClipKeepsTail(t *testing.T) {
 	}
 	if !strings.Contains(got, "생략") {
 		t.Error("잘렸음을 알리지 않았다")
+	}
+}
+
+// 셸이 뒤에 남긴 프로세스가 파이프를 붙잡아도 오래 매달리지 않는다.
+// 예전에는 2초 제한에 15초가 걸렸다.
+func TestRunDoesNotHangOnBackgroundChild(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("유닉스 셸 문법")
+	}
+	start := time.Now()
+	res, err := Run(context.Background(), "sleep 10 & echo started", "", 2*time.Second)
+	if err != nil {
+		t.Fatalf("err = %v", err)
+	}
+	if took := time.Since(start); took > 4*time.Second {
+		t.Fatalf("took %v, want < 4s", took)
+	}
+	if !strings.Contains(res.Output, "started") {
+		t.Fatalf("output = %q", res.Output)
+	}
+}
+
+// 시간이 다 되면 셸이 띄운 자식까지 끝낸다.
+func TestRunTimeoutKillsProcessGroup(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("프로세스 그룹은 유닉스만")
+	}
+	marker := filepath.Join(t.TempDir(), "survived")
+	start := time.Now()
+	res, _ := Run(context.Background(), "(sleep 3; touch "+marker+") & sleep 10", "", time.Second)
+	if !res.TimedOut {
+		t.Fatalf("TimedOut = false")
+	}
+	if took := time.Since(start); took > 3*time.Second {
+		t.Fatalf("took %v", took)
+	}
+	time.Sleep(3 * time.Second)
+	if _, err := os.Stat(marker); err == nil {
+		t.Fatal("시간이 다 된 뒤에도 자식이 살아남아 파일을 만들었다")
+	}
+}
+
+// 명령 환경에 이 서비스의 키가 없다.
+func TestRunHidesServiceSecrets(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("유닉스 셸 문법")
+	}
+	t.Setenv("TERMINAL_API_KEY", "probe-secret")
+	t.Setenv("RELAY_TERMINAL_TOKEN", "probe-secret")
+	res, err := Run(context.Background(), `env | grep -c probe-secret || true`, "", 5*time.Second)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.TrimSpace(res.Output) != "0" {
+		t.Fatalf("비밀값이 보인다: %q", res.Output)
 	}
 }

@@ -291,7 +291,8 @@ curl -s -X POST "localhost:4200/terminals/$ID/input" \
 | `TERMINAL_ENABLED` | (없음) | `true`가 아니면 시작하지 않는다 |
 | `TERMINAL_HOST` | `127.0.0.1` | 리스닝 주소 |
 | `TERMINAL_PORT` | `4200` | 리스닝 포트 |
-| `TERMINAL_API_KEY` | (없음) | 설정 시 `x-api-key` 필수 |
+| `TERMINAL_API_KEY` | (없음) | 설정 시 `x-api-key` 필수. 비우면 이 기기 주소로만 받고, `TERMINAL_HOST`가 루프백이 아니면 시작하지 않는다 |
+| `TERMINAL_CORS_ORIGINS` | (없음) | 브라우저에서 직접 부를 수 있는 오리진. 쉼표로 여러 개. 목록에 없는 `Origin`은 403 |
 | `TERMINAL_ALLOWED_ROOTS` | 홈 디렉터리 | 터미널 시작 가능 경로. unix `:`, windows `;` |
 | `TERMINAL_SHELL` | (없음) | 비우면 `$SHELL` / PowerShell |
 | `TERMINAL_MAX` | `3` | 동시 터미널 수 |
@@ -319,6 +320,18 @@ curl -s -X POST "localhost:4200/terminals/$ID/input" \
    막는다. 안 막으면 `1;2c` 같은 글자가 저절로 찍힌다
 5. **윈도우** — `.bat`/`.cmd`와 `cmd.exe` 직접 실행을 막는다. 인용 규칙이
    달라 인자에 섞인 특수문자가 빠져나갈 수 있다
+6. **브라우저 차단** — `Origin`이 `TERMINAL_CORS_ORIGINS`에 없으면 403이다. 본문은
+   `application/json`만 받는다. `text/plain`·폼은 브라우저가 사전 확인 없이
+   다른 사이트로 보낼 수 있어서, 예전에는 키가 없으면 아무 웹페이지가 `/run`으로
+   명령을 돌릴 수 있었다. 정상 호출자(relaylink, 콘솔)는 `Origin`을 싣지 않는다
+7. **키 없이는 이 기기에서만** — 키가 없으면 `Host`도 이 기기 주소여야 한다(DNS
+   리바인딩 차단). 키 없이 `TERMINAL_HOST`를 밖으로 열면 시작하지 않는다
+8. **비밀값을 셸에 넘기지 않음** — 셸과 `/run` 명령의 환경에서 `TERMINAL_`·`RELAY_`
+   변수를 뺀다. 터미널에서 돌리는 프로그램이 키를 읽지 못하게
+9. **`/run` 시간 제한** — 새 프로세스 그룹으로 띄워 시간이 다 되면 그룹째 끝낸다.
+   셸이 뒤에 남긴 프로세스(`… &`)가 출력 파이프를 붙잡아도 오래 매달리지 않는다
+10. **relay 경로 검사** — relay가 넘긴 경로는 URL로 풀어 이 기기 주소와
+    `/terminals`·`/sys`·`/run` 안인지 확인한다
 
 **인터넷에 직접 열지 마라.** 밖에서 써야 한다면 중계 서버를 두고 그쪽에
 인증을 걸어라.
