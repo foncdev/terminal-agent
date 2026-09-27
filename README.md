@@ -292,6 +292,7 @@ curl -s -X POST "localhost:4200/terminals/$ID/input" \
 | `TERMINAL_HOST` | `127.0.0.1` | 리스닝 주소 |
 | `TERMINAL_PORT` | `4200` | 리스닝 포트 |
 | `TERMINAL_API_KEY` | (없음) | 설정 시 `x-api-key` 필수. 비우면 이 기기 주소로만 받고, `TERMINAL_HOST`가 루프백이 아니면 시작하지 않는다 |
+| `TERMINAL_BONJOUR` | (켜짐) | `false`면 같은 와이파이에 알리지 않는다. 맥에서, `TERMINAL_HOST`가 루프백이 아닐 때만 `_relayterm._tcp`로 알린다. 폰의 Relay 앱이 이 이름으로 agent를 찾아 맥 IP가 바뀌어도 새 주소를 스스로 찾는다 |
 | `TERMINAL_CORS_ORIGINS` | (없음) | 브라우저에서 직접 부를 수 있는 오리진. 쉼표로 여러 개. 목록에 없는 `Origin`은 403 |
 | `TERMINAL_ALLOWED_ROOTS` | 홈 디렉터리 | 터미널 시작 가능 경로. unix `:`, windows `;` |
 | `TERMINAL_SHELL` | (없음) | 비우면 `$SHELL` / PowerShell |

@@ -26,6 +26,7 @@ import (
 	"github.com/charmbracelet/x/term"
 
 	"github.com/foncdev/terminal-agent/internal/api"
+	"github.com/foncdev/terminal-agent/internal/bonjour"
 	"github.com/foncdev/terminal-agent/internal/config"
 	"github.com/foncdev/terminal-agent/internal/pty"
 	"github.com/foncdev/terminal-agent/internal/relaylink"
@@ -105,6 +106,10 @@ func main() {
 	} else {
 		banner(cfg, *headless)
 	}
+
+	// 같은 와이파이의 폰이 이 agent를 찾게 알린다(맥에서, 밖에 열렸을 때만).
+	stopAdvertising := bonjour.Advertise(cfg.Port, cfg.LocalOnly())
+	defer stopAdvertising()
 
 	go func() {
 		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
