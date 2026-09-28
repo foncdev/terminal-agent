@@ -458,6 +458,8 @@ PTY 테스트는 윈도우에서 건너뛴다. 실기기에서 확인해야 한�
 - **[relay-service](https://github.com/foncdev/relay-service)** — 밖에서 붙을 때
   쓰는 중계 서버. 브라우저 관리 UI가 함께 들어 있어, 이 agent를 붙이면
   터미널 탭에서 바로 쓸 수 있다. Docker 이미지로 배포된다
+- **[notify-agent](https://github.com/foncdev/notify-agent)** — 맥 알림을 relay-service로 넘기는 에이전트.
+  알림 기록을 읽으려면 전체 디스크 접근이 필요해, 셸을 여는 이 agent와 따로 둔다
 
 ### 쓰는 것
 
