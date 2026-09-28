@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/foncdev/terminal-agent/internal/lang"
 	"github.com/foncdev/terminal-agent/internal/sysinfo"
 )
 
@@ -28,7 +29,7 @@ func (s *Server) handleSysProcs(w http.ResponseWriter, r *http.Request) {
 	if raw := r.URL.Query().Get("n"); raw != "" {
 		parsed, err := strconv.Atoi(raw)
 		if err != nil {
-			writeError(w, http.StatusBadRequest, "bad_request", "n은 숫자여야 합니다.")
+			writeError(w, http.StatusBadRequest, "bad_request", lang.L("n은 숫자여야 합니다.", "n must be a number."))
 			return
 		}
 		n = parsed
@@ -37,7 +38,7 @@ func (s *Server) handleSysProcs(w http.ResponseWriter, r *http.Request) {
 	procs, err := sysinfo.Procs(r.Context(), n)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "sysinfo_failed",
-			"프로세스 목록을 읽지 못했습니다: "+err.Error())
+			lang.L("프로세스 목록을 읽지 못했습니다: ", "Couldn't read the process list: ")+err.Error())
 		return
 	}
 	// nil로 두면 JSON에 null이 나가 받는 쪽이 길이를 못 센다.

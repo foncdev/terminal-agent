@@ -303,8 +303,15 @@ curl -s -X POST "localhost:4200/terminals/$ID/input" \
 | `RELAY_URL` | (없음) | 중계 서버로 나가서 붙는다 (선택) |
 | `RELAY_TERMINAL_TOKEN` | (없음) | 중계 서버와 맞춘 토큰 |
 | `RELAY_AGENT_NAME` | 호스트명 | 서버 목록에 보일 이름 |
+| `RELAY_LANG` | `ko` | 폰·안경·웹과 콘솔에 보이는 글의 언어. `en`으로 시작하면 영어, 그 밖은 한국어. relay-service의 `RELAY_LANG`, 폰 앱의 언어와 같게 둔다 |
 
 `.env` 파일도 읽지만 **셸에 이미 있는 값이 우선**한다.
+
+`RELAY_LANG`은 relay-service와 같은 변수다. 하나로 맞춰 두면 어디서나 같은 뜻이다.
+옮기는 글은 API 오류 메시지, `/run`의 위험 신호(`risks[].reason`)와 결과 안내,
+`/sys/summary`의 가동 시간(`3일 4시간` / `3d 4h`), 콘솔 화면 상태바, 명령줄
+도움말이다. `code` 값(`confirm_required` 등)과 JSON 키는 언어와 상관없이 그대로다.
+운영자가 보는 로그는 relay-service처럼 한국어로 남긴다.
 
 ---
 
@@ -416,6 +423,7 @@ internal/
   api/        HTTP 라우트 + WebSocket/SSE
   relaylink/  중계 서버로 나가는 WS (선택)
   tui/        콘솔 화면
+  lang/       글 언어 선택 (RELAY_LANG)
 ```
 
 ### 설계 메모

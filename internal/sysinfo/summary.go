@@ -8,6 +8,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/foncdev/terminal-agent/internal/lang"
 )
 
 // Get은 홈 화면에 쓸 요약을 모은다.
@@ -247,7 +249,7 @@ func loadAvg(ctx context.Context) []float64 {
 }
 
 /*
- * uptime은 가동 시간을 한국어로 준다.
+ * uptime은 가동 시간을 지금 언어(lang)로 준다.
  *
  * uptime 명령의 글을 그대로 쓰지 않는다. 로케일과 OS마다 꼴이 달라
  * ("up 5 days, 21:55" / "up 3:20") 안경에서 읽기 어렵다. 부팅 시각을
@@ -300,7 +302,7 @@ func uptime(ctx context.Context) string {
 	return humanDuration(time.Since(boot))
 }
 
-// humanDuration은 기간을 한국어 두 토막으로 줄인다.
+// humanDuration은 기간을 두 토막으로 줄인다(영어는 "3d 4h").
 // 안경 화면이 좁아 "3일 4시간"까지만 보여준다.
 func humanDuration(d time.Duration) string {
 	if d < 0 {
@@ -309,20 +311,21 @@ func humanDuration(d time.Duration) string {
 	days := int(d.Hours()) / 24
 	hours := int(d.Hours()) % 24
 	mins := int(d.Minutes()) % 60
+	day, hour, minute := lang.L("일", "d"), lang.L("시간", "h"), lang.L("분", "m")
 
 	switch {
 	case days > 0:
 		if hours > 0 {
-			return strconv.Itoa(days) + "일 " + strconv.Itoa(hours) + "시간"
+			return strconv.Itoa(days) + day + " " + strconv.Itoa(hours) + hour
 		}
-		return strconv.Itoa(days) + "일"
+		return strconv.Itoa(days) + day
 	case hours > 0:
 		if mins > 0 {
-			return strconv.Itoa(hours) + "시간 " + strconv.Itoa(mins) + "분"
+			return strconv.Itoa(hours) + hour + " " + strconv.Itoa(mins) + minute
 		}
-		return strconv.Itoa(hours) + "시간"
+		return strconv.Itoa(hours) + hour
 	default:
-		return strconv.Itoa(mins) + "분"
+		return strconv.Itoa(mins) + minute
 	}
 }
 

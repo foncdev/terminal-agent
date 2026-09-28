@@ -8,6 +8,8 @@ package runner
 import (
 	"regexp"
 	"strings"
+
+	"github.com/foncdev/terminal-agent/internal/lang"
 )
 
 /*
@@ -30,36 +32,37 @@ type Risk struct {
 }
 
 var patterns = []struct {
-	re     *regexp.Regexp
-	reason string
-	destr  bool
+	re       *regexp.Regexp
+	reasonKo string
+	reasonEn string
+	destr    bool
 }{
 	// 지우기. -r/-f가 붙으면 되돌릴 수 없다.
-	{regexp.MustCompile(`\brm\s+(-\w*[rf]\w*\s+)+`), "rm으로 지웁니다", true},
-	{regexp.MustCompile(`\brm\s+`), "rm으로 지웁니다", true},
-	{regexp.MustCompile(`\b(shred|srm)\b`), "파일을 덮어써 지웁니다", true},
+	{regexp.MustCompile(`\brm\s+(-\w*[rf]\w*\s+)+`), "rm으로 지웁니다", "Deletes with rm", true},
+	{regexp.MustCompile(`\brm\s+`), "rm으로 지웁니다", "Deletes with rm", true},
+	{regexp.MustCompile(`\b(shred|srm)\b`), "파일을 덮어써 지웁니다", "Overwrites files to erase them", true},
 
 	// 권한 상승. 무엇이든 할 수 있게 된다.
-	{regexp.MustCompile(`\b(sudo|doas|su)\b`), "관리자 권한으로 실행합니다", false},
+	{regexp.MustCompile(`\b(sudo|doas|su)\b`), "관리자 권한으로 실행합니다", "Runs with admin rights", false},
 
 	// 디스크·파일시스템. 실수하면 복구가 어렵다.
-	{regexp.MustCompile(`\b(mkfs|fdisk|diskutil|parted)\b`), "디스크를 건드립니다", true},
-	{regexp.MustCompile(`\bdd\b.*\bof=`), "dd로 덮어씁니다", true},
+	{regexp.MustCompile(`\b(mkfs|fdisk|diskutil|parted)\b`), "디스크를 건드립니다", "Touches disks", true},
+	{regexp.MustCompile(`\bdd\b.*\bof=`), "dd로 덮어씁니다", "Overwrites with dd", true},
 
 	// 프로세스를 죽인다.
-	{regexp.MustCompile(`\b(kill|killall|pkill)\b`), "프로세스를 종료합니다", true},
-	{regexp.MustCompile(`\b(shutdown|reboot|halt)\b`), "시스템을 끕니다", true},
+	{regexp.MustCompile(`\b(kill|killall|pkill)\b`), "프로세스를 종료합니다", "Kills processes", true},
+	{regexp.MustCompile(`\b(shutdown|reboot|halt)\b`), "시스템을 끕니다", "Shuts down the system", true},
 
 	// 되돌릴 수 없는 git 조작.
-	{regexp.MustCompile(`\bgit\s+(push\s+.*--force|push\s+-f\b)`), "강제 푸시입니다", true},
-	{regexp.MustCompile(`\bgit\s+reset\s+--hard\b`), "작업 내용을 버립니다", true},
-	{regexp.MustCompile(`\bgit\s+clean\s+-\w*f`), "추적하지 않는 파일을 지웁니다", true},
+	{regexp.MustCompile(`\bgit\s+(push\s+.*--force|push\s+-f\b)`), "강제 푸시입니다", "Force push", true},
+	{regexp.MustCompile(`\bgit\s+reset\s+--hard\b`), "작업 내용을 버립니다", "Discards your changes", true},
+	{regexp.MustCompile(`\bgit\s+clean\s+-\w*f`), "추적하지 않는 파일을 지웁니다", "Deletes untracked files", true},
 
 	// 받아서 바로 실행. 무엇이 올지 모른다.
-	{regexp.MustCompile(`\b(curl|wget)\b[^|]*\|\s*(sudo\s+)?(sh|bash|zsh)\b`), "받아서 바로 실행합니다", true},
+	{regexp.MustCompile(`\b(curl|wget)\b[^|]*\|\s*(sudo\s+)?(sh|bash|zsh)\b`), "받아서 바로 실행합니다", "Downloads and runs right away", true},
 
 	// 권한을 통째로 바꾼다.
-	{regexp.MustCompile(`\bchmod\s+(-R\s+)?777\b`), "누구나 쓸 수 있게 바꿉니다", false},
+	{regexp.MustCompile(`\bchmod\s+(-R\s+)?777\b`), "누구나 쓸 수 있게 바꿉니다", "Makes it writable by anyone", false},
 }
 
 // Inspect는 명령에서 위험 신호를 모은다. 없으면 빈 조각이다.
@@ -74,11 +77,12 @@ func Inspect(command string) []Risk {
 			continue
 		}
 		// 같은 이유를 두 번 보여주지 않는다. rm 규칙이 둘 다 걸린다.
-		if seen[p.reason] {
+		reason := lang.L(p.reasonKo, p.reasonEn)
+		if seen[reason] {
 			continue
 		}
-		seen[p.reason] = true
-		out = append(out, Risk{Reason: p.reason, Destructive: p.destr})
+		seen[reason] = true
+		out = append(out, Risk{Reason: reason, Destructive: p.destr})
 	}
 	return out
 }

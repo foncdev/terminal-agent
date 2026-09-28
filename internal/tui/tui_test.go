@@ -34,6 +34,7 @@ func TestLocalConsole(t *testing.T) {
 	cmd.Env = append(os.Environ(),
 		"TERM=xterm-256color",
 		"TERMINAL_ENABLED=true",
+		"RELAY_LANG=ko",   // 상태바 글을 한국어로 확인한다
 		"TERMINAL_PORT=0", // 포트 충돌을 피한다
 		"TERMINAL_ALLOWED_ROOTS="+t.TempDir(),
 		"TERMINAL_SHELL=/bin/sh",

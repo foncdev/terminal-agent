@@ -2,9 +2,11 @@ package tui
 
 import (
 	"context"
-	"fmt"
+	"errors"
 
 	tea "charm.land/bubbletea/v2"
+
+	"github.com/foncdev/terminal-agent/internal/lang"
 )
 
 // Run은 로컬 화면을 띄우고 끝날 때까지 기다린다.
@@ -16,7 +18,7 @@ import (
 // 시작 전에 Model을 받아야 한다면 New를 직접 쓴다.
 func Run(ctx context.Context, m *Model) error {
 	if m == nil {
-		return fmt.Errorf("모델이 없습니다")
+		return errors.New(lang.L("모델이 없습니다", "No model"))
 	}
 	defer m.Close()
 

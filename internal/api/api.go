@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/foncdev/terminal-agent/internal/config"
+	"github.com/foncdev/terminal-agent/internal/lang"
 	"github.com/foncdev/terminal-agent/internal/terminal"
 )
 
@@ -80,7 +81,8 @@ func (s *Server) withOrigin(next http.Handler) http.Handler {
 		}
 		if !slices.Contains(s.cfg.CORSOrigins, origin) {
 			writeError(w, http.StatusForbidden, "origin_not_allowed",
-				"허용되지 않은 오리진입니다 (TERMINAL_CORS_ORIGINS에 추가): "+origin)
+				lang.L("허용되지 않은 오리진입니다 (TERMINAL_CORS_ORIGINS에 추가): ",
+					"Origin not allowed (add it to TERMINAL_CORS_ORIGINS): ")+origin)
 			return
 		}
 		w.Header().Set("Access-Control-Allow-Origin", origin)
@@ -111,7 +113,8 @@ func (s *Server) withHost(next http.Handler) http.Handler {
 		}
 		if !config.IsLoopback(host) {
 			writeError(w, http.StatusForbidden, "host_not_allowed",
-				"TERMINAL_API_KEY 없이는 이 기기 주소로만 접속할 수 있습니다.")
+				lang.L("TERMINAL_API_KEY 없이는 이 기기 주소로만 접속할 수 있습니다.",
+					"Without TERMINAL_API_KEY, only this device's own address is accepted."))
 			return
 		}
 		next.ServeHTTP(w, r)
@@ -148,7 +151,7 @@ func (s *Server) withAuth(next http.Handler) http.Handler {
 			return
 		}
 
-		writeError(w, http.StatusUnauthorized, "unauthorized", "x-api-key가 없거나 다릅니다.")
+		writeError(w, http.StatusUnauthorized, "unauthorized", lang.L("x-api-key가 없거나 다릅니다.", "x-api-key is missing or wrong."))
 	})
 }
 

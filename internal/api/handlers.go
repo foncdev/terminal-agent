@@ -11,6 +11,7 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/foncdev/terminal-agent/internal/lang"
 	"github.com/foncdev/terminal-agent/internal/pty"
 	"github.com/foncdev/terminal-agent/internal/terminal"
 )
@@ -32,7 +33,8 @@ type createRequest struct {
 func (s *Server) handleCreate(w http.ResponseWriter, r *http.Request) {
 	if !ptyAvailable() {
 		writeError(w, http.StatusNotImplemented, "pty_unsupported",
-			"이 시스템에서는 터미널을 쓸 수 없습니다. 윈도우는 10 1809 이상이 필요합니다.")
+			lang.L("이 시스템에서는 터미널을 쓸 수 없습니다. 윈도우는 10 1809 이상이 필요합니다.",
+				"Terminals aren't supported on this system. Windows needs 10 1809 or later."))
 		return
 	}
 
@@ -63,7 +65,8 @@ func (s *Server) handleCreate(w http.ResponseWriter, r *http.Request) {
 	switch {
 	case errors.Is(err, terminal.ErrTooMany):
 		writeError(w, http.StatusTooManyRequests, "too_many",
-			"터미널이 너무 많습니다. 쓰지 않는 것을 닫아주세요.")
+			lang.L("터미널이 너무 많습니다. 쓰지 않는 것을 닫아주세요.",
+				"Too many terminals. Close the ones you aren't using."))
 		return
 	case err != nil:
 		writeError(w, http.StatusInternalServerError, "spawn_failed", err.Error())
@@ -93,7 +96,8 @@ func (s *Server) resolveArgv(argv []string) ([]string, error) {
 		name := strings.ToLower(filepath.Base(argv[0]))
 		ext := strings.ToLower(filepath.Ext(argv[0]))
 		if ext == ".bat" || ext == ".cmd" || name == "cmd.exe" || name == "cmd" {
-			return nil, errors.New("윈도우에서는 배치 파일과 cmd.exe를 직접 실행할 수 없습니다")
+			return nil, errors.New(lang.L("윈도우에서는 배치 파일과 cmd.exe를 직접 실행할 수 없습니다",
+				"Batch files and cmd.exe can't be run directly on Windows"))
 		}
 	}
 	return argv, nil
@@ -167,7 +171,7 @@ func (s *Server) handleResize(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if req.Cols <= 0 || req.Rows <= 0 {
-		writeError(w, http.StatusBadRequest, "bad_request", "cols와 rows는 1 이상이어야 합니다.")
+		writeError(w, http.StatusBadRequest, "bad_request", lang.L("cols와 rows는 1 이상이어야 합니다.", "cols and rows must be 1 or more."))
 		return
 	}
 
@@ -202,7 +206,7 @@ func (s *Server) handleResize(w http.ResponseWriter, r *http.Request) {
 func (s *Server) lookup(w http.ResponseWriter, r *http.Request) (*terminal.Terminal, bool) {
 	t, err := s.reg.Get(r.PathValue("id"))
 	if err != nil {
-		writeError(w, http.StatusNotFound, "not_found", "터미널을 찾을 수 없습니다.")
+		writeError(w, http.StatusNotFound, "not_found", lang.L("터미널을 찾을 수 없습니다.", "Terminal not found."))
 		return nil, false
 	}
 	return t, true
@@ -217,7 +221,7 @@ func decodeJSON(r *http.Request, v any) error {
 	// 다른 사이트로 보낼 수 있는 형식이라, 그걸 JSON으로 읽어주면 오리진
 	// 검사를 피한 요청으로도 명령이 돌았다.
 	if mt, _, _ := mime.ParseMediaType(r.Header.Get("Content-Type")); mt != "application/json" {
-		return errors.New("Content-Type은 application/json이어야 합니다")
+		return errors.New(lang.L("Content-Type은 application/json이어야 합니다", "Content-Type must be application/json"))
 	}
 	dec := json.NewDecoder(http.MaxBytesReader(nil, r.Body, 1<<20))
 	dec.DisallowUnknownFields()

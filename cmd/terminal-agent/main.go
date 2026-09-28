@@ -28,6 +28,7 @@ import (
 	"github.com/foncdev/terminal-agent/internal/api"
 	"github.com/foncdev/terminal-agent/internal/bonjour"
 	"github.com/foncdev/terminal-agent/internal/config"
+	"github.com/foncdev/terminal-agent/internal/lang"
 	"github.com/foncdev/terminal-agent/internal/pty"
 	"github.com/foncdev/terminal-agent/internal/relaylink"
 	"github.com/foncdev/terminal-agent/internal/terminal"
@@ -39,8 +40,11 @@ import (
 var version = "dev"
 
 func main() {
-	headless := flag.Bool("headless", false, "콘솔 화면 없이 서버로만 돈다")
-	showVersion := flag.Bool("version", false, "버전을 찍고 끝낸다")
+	// 설정(.env)을 먼저 읽는다. 도움말부터 RELAY_LANG을 따르게 하려는 것이다.
+	cfg := config.Load()
+
+	headless := flag.Bool("headless", false, lang.L("콘솔 화면 없이 서버로만 돈다", "Run as a server only, without the console screen"))
+	showVersion := flag.Bool("version", false, lang.L("버전을 찍고 끝낸다", "Print the version and exit"))
 	flag.Parse()
 
 	if *showVersion {
@@ -49,8 +53,6 @@ func main() {
 	}
 
 	log.SetFlags(log.Ltime)
-
-	cfg := config.Load()
 
 	// 켜야만 뜬다. 실수로 도는 일이 없게 한다.
 	if os.Getenv("TERMINAL_ENABLED") != "true" {
@@ -159,7 +161,7 @@ func main() {
 	dir, err := cfg.ResolveDir("")
 	if err != nil {
 		log.Printf("[terminal] 시작 디렉터리를 정할 수 없습니다: %v", err)
-		fmt.Fprintf(os.Stderr, "시작 디렉터리를 정할 수 없습니다: %v\n", err)
+		fmt.Fprintf(os.Stderr, lang.L("시작 디렉터리를 정할 수 없습니다: %v\n", "Couldn't determine the start directory: %v\n"), err)
 		os.Exit(1)
 	}
 
@@ -187,7 +189,7 @@ func main() {
 	})
 	if err != nil {
 		log.Printf("[terminal] 셸을 띄우지 못했습니다: %v", err)
-		fmt.Fprintf(os.Stderr, "셸을 띄우지 못했습니다: %v\n", err)
+		fmt.Fprintf(os.Stderr, lang.L("셸을 띄우지 못했습니다: %v\n", "Couldn't start the shell: %v\n"), err)
 		os.Exit(1)
 	}
 	log.Printf("[terminal] 로컬 화면 시작 %s dir=%s", local.ID(), dir)

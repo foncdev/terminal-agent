@@ -10,6 +10,7 @@ import (
 
 	"github.com/coder/websocket"
 
+	"github.com/foncdev/terminal-agent/internal/lang"
 	"github.com/foncdev/terminal-agent/internal/terminal"
 )
 
@@ -152,7 +153,7 @@ func (s *Server) handleSSE(w http.ResponseWriter, r *http.Request) {
 
 	flusher, ok := w.(http.Flusher)
 	if !ok {
-		writeError(w, http.StatusInternalServerError, "no_flush", "스트리밍을 지원하지 않습니다.")
+		writeError(w, http.StatusInternalServerError, "no_flush", lang.L("스트리밍을 지원하지 않습니다.", "Streaming isn't supported."))
 		return
 	}
 

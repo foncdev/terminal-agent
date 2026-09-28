@@ -6,6 +6,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/foncdev/terminal-agent/internal/lang"
 )
 
 func TestShortName(t *testing.T) {
@@ -33,6 +35,7 @@ func TestShortName(t *testing.T) {
 }
 
 func TestHumanDuration(t *testing.T) {
+	defer lang.Set(lang.KO)()
 	cases := []struct {
 		in   time.Duration
 		want string

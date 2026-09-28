@@ -24,6 +24,8 @@ import (
 	"time"
 
 	"github.com/coder/websocket"
+
+	"github.com/foncdev/terminal-agent/internal/lang"
 )
 
 const (
@@ -163,7 +165,7 @@ func (l *Link) Run(ctx context.Context) {
 func (l *Link) connect(ctx context.Context) error {
 	target, err := url.Parse(l.url)
 	if err != nil {
-		return fmt.Errorf("relay 주소가 잘못됐습니다: %w", err)
+		return fmt.Errorf(lang.L("relay 주소가 잘못됐습니다: %w", "Invalid relay address: %w"), err)
 	}
 	q := target.Query()
 	q.Set("name", l.name)
@@ -249,7 +251,7 @@ func (l *Link) handle(ctx context.Context, msg serverMessage) {
 // 같아야 한다. ..은 정규화해 본 뒤 relay가 중계하는 경로 안인지 확인한다.
 func (l *Link) localURL(path string) (string, error) {
 	if !strings.HasPrefix(path, "/") || strings.HasPrefix(path, "//") {
-		return "", fmt.Errorf("잘못된 경로: %q", path)
+		return "", fmt.Errorf(lang.L("잘못된 경로: %q", "Invalid path: %q"), path)
 	}
 	base, err := url.Parse(l.local)
 	if err != nil {
@@ -261,10 +263,10 @@ func (l *Link) localURL(path string) (string, error) {
 	}
 	u := base.ResolveReference(ref)
 	if u.Scheme != base.Scheme || u.Host != base.Host || u.User != nil {
-		return "", fmt.Errorf("이 기기 밖을 가리키는 경로: %q", path)
+		return "", fmt.Errorf(lang.L("이 기기 밖을 가리키는 경로: %q", "Path points outside this device: %q"), path)
 	}
 	if !relayedPath.MatchString(u.Path) {
-		return "", fmt.Errorf("중계하지 않는 경로: %q", path)
+		return "", fmt.Errorf(lang.L("중계하지 않는 경로: %q", "Path is not relayed: %q"), path)
 	}
 	return u.String(), nil
 }

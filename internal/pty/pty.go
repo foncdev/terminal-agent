@@ -18,12 +18,13 @@ import (
 	"os"
 	"strings"
 
+	"github.com/foncdev/terminal-agent/internal/lang"
 	"github.com/foncdev/terminal-agent/internal/secretenv"
 )
 
 // ErrUnsupported는 이 플랫폼에서 PTY를 쓸 수 없을 때 반환된다.
 // 윈도우에서 ConPTY가 없는 경우(10 1809 미만)가 여기 해당한다.
-var ErrUnsupported = errors.New("이 플랫폼에서는 터미널을 쓸 수 없습니다")
+var ErrUnsupported error = lang.NewError("이 플랫폼에서는 터미널을 쓸 수 없습니다", "Terminals aren't supported on this platform")
 
 // Pty는 살아 있는 의사 터미널 하나다.
 //

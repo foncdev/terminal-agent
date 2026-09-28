@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+
+	"github.com/foncdev/terminal-agent/internal/lang"
 )
 
 // ResolveDir는 시작 디렉터리를 확인하고 실제 경로로 바꾼다.
@@ -24,7 +26,7 @@ func (c Config) ResolveDir(dir string) (string, error) {
 
 	real, err := filepath.EvalSymlinks(expandHome(dir))
 	if err != nil {
-		return "", fmt.Errorf("경로를 찾을 수 없습니다: %s", dir)
+		return "", fmt.Errorf(lang.L("경로를 찾을 수 없습니다: %s", "Path not found: %s"), dir)
 	}
 	real, err = filepath.Abs(real)
 	if err != nil {
@@ -33,10 +35,10 @@ func (c Config) ResolveDir(dir string) (string, error) {
 
 	info, err := os.Stat(real)
 	if err != nil {
-		return "", fmt.Errorf("경로를 찾을 수 없습니다: %s", dir)
+		return "", fmt.Errorf(lang.L("경로를 찾을 수 없습니다: %s", "Path not found: %s"), dir)
 	}
 	if !info.IsDir() {
-		return "", fmt.Errorf("디렉토리가 아닙니다: %s", real)
+		return "", fmt.Errorf(lang.L("디렉토리가 아닙니다: %s", "Not a directory: %s"), real)
 	}
 
 	// 루트를 안 정했으면 제한 없이 쓴다. 기본값이 홈이라 보통은 여기 안 온다.
@@ -55,7 +57,7 @@ func (c Config) ResolveDir(dir string) (string, error) {
 		}
 	}
 
-	return "", fmt.Errorf("허용된 루트 밖의 경로입니다: %s (허용: %s)",
+	return "", fmt.Errorf(lang.L("허용된 루트 밖의 경로입니다: %s (허용: %s)", "Path is outside the allowed roots: %s (allowed: %s)"),
 		real, strings.Join(c.AllowedRoots, ", "))
 }
 

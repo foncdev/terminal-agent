@@ -1,17 +1,18 @@
 package terminal
 
 import (
-	"errors"
 	"sort"
 	"sync"
 	"time"
 
 	"github.com/google/uuid"
+
+	"github.com/foncdev/terminal-agent/internal/lang"
 )
 
 var (
-	ErrNotFound = errors.New("터미널을 찾을 수 없습니다")
-	ErrTooMany  = errors.New("터미널이 너무 많습니다")
+	ErrNotFound error = lang.NewError("터미널을 찾을 수 없습니다", "Terminal not found")
+	ErrTooMany  error = lang.NewError("터미널이 너무 많습니다", "Too many terminals")
 )
 
 // Registry는 살아 있는 터미널을 들고 있는다.

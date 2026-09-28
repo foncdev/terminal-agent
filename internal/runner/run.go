@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/foncdev/terminal-agent/internal/lang"
 	"github.com/foncdev/terminal-agent/internal/secretenv"
 )
 
@@ -34,7 +35,7 @@ const defaultTimeout = 20 * time.Second
 // 시간이 다 된 뒤 출력 파이프가 닫히기를 기다리는 최대 시간.
 const waitDelay = time.Second
 
-var ErrEmpty = errors.New("실행할 명령이 없습니다")
+var ErrEmpty = lang.NewError("실행할 명령이 없습니다", "No command to run")
 
 /*
  * Run은 명령을 셸에 넘겨 한 번 실행한다.
@@ -108,7 +109,7 @@ func Run(ctx context.Context, command, dir string, timeout time.Duration) (Resul
 	if res.TimedOut {
 		// 끊긴 것도 결과다. 오류로 올리면 그때까지 나온 글을 잃는다.
 		if res.Output == "" {
-			res.Output = "(시간을 넘겨 중단했습니다)"
+			res.Output = lang.L("(시간을 넘겨 중단했습니다)", "(Stopped: timed out)")
 		}
 		return res, nil
 	}
@@ -145,5 +146,5 @@ func clip(s string, max int) string {
 	if i := strings.IndexByte(cut, '\n'); i >= 0 && i < 200 {
 		cut = cut[i+1:]
 	}
-	return "…(앞부분 생략)\n" + cut
+	return lang.L("…(앞부분 생략)\n", "…(earlier output omitted)\n") + cut
 }

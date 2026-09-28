@@ -24,6 +24,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/vt"
 
+	"github.com/foncdev/terminal-agent/internal/lang"
 	"github.com/foncdev/terminal-agent/internal/relaylink"
 	"github.com/foncdev/terminal-agent/internal/terminal"
 )
@@ -283,13 +284,13 @@ func (m *Model) statusBar() string {
 
 	if n := m.term.Subscribers(); n > 1 {
 		// 자기 자신도 구독자라 하나를 뺀다.
-		left += fmt.Sprintf(" · 웹 %d명", n-1)
+		left += fmt.Sprintf(lang.L(" · 웹 %d명", " · web %d"), n-1)
 	}
 	if m.exited {
-		left += " · 셸 종료됨"
+		left += lang.L(" · 셸 종료됨", " · shell exited")
 	}
 
-	right := "나가기 " + quitKey + " "
+	right := lang.L("나가기 ", "Quit ") + quitKey + " "
 
 	pad := m.width - runeLen(left) - runeLen(right)
 	if pad < 1 {
@@ -304,19 +305,19 @@ func (m *Model) statusBar() string {
 
 func (m *Model) relayPart() string {
 	if !m.relayOn {
-		return "로컬 전용"
+		return lang.L("로컬 전용", "Local only")
 	}
 	if m.status.Connected {
 		name := m.agentName
 		if name == "" {
-			name = "이름 없음"
+			name = lang.L("이름 없음", "unnamed")
 		}
-		return "● relay 연결됨 · " + name
+		return lang.L("● relay 연결됨 · ", "● relay connected · ") + name
 	}
 	if m.status.LastError != "" {
-		return "○ relay 끊김"
+		return lang.L("○ relay 끊김", "○ relay disconnected")
 	}
-	return "○ relay 연결 중"
+	return lang.L("○ relay 연결 중", "○ relay connecting")
 }
 
 // Close는 구독을 정리한다. 프로그램이 끝날 때 부른다.
@@ -349,10 +350,10 @@ func uptime(since time.Time) string {
 	d := time.Since(since)
 	switch {
 	case d < time.Minute:
-		return fmt.Sprintf("%d초", int(d.Seconds()))
+		return fmt.Sprintf(lang.L("%d초", "%ds"), int(d.Seconds()))
 	case d < time.Hour:
-		return fmt.Sprintf("%d분", int(d.Minutes()))
+		return fmt.Sprintf(lang.L("%d분", "%dm"), int(d.Minutes()))
 	default:
-		return fmt.Sprintf("%d시간 %d분", int(d.Hours()), int(d.Minutes())%60)
+		return fmt.Sprintf(lang.L("%d시간 %d분", "%dh %dm"), int(d.Hours()), int(d.Minutes())%60)
 	}
 }

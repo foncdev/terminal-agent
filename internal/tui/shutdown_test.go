@@ -104,6 +104,7 @@ func startAgent(t *testing.T, bin string) (*os.File, *exec.Cmd, *vt.SafeEmulator
 	cmd.Env = append(os.Environ(),
 		"TERM=xterm-256color",
 		"TERMINAL_ENABLED=true",
+		"RELAY_LANG=ko", // 상태바 글을 한국어로 확인한다
 		"TERMINAL_PORT=0",
 		"TERMINAL_ALLOWED_ROOTS="+dir,
 		"TERMINAL_SHELL=/bin/sh",

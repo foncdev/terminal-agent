@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/foncdev/terminal-agent/internal/lang"
 	"github.com/foncdev/terminal-agent/internal/runner"
 )
 
@@ -50,7 +51,7 @@ func (s *Server) handleRun(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusConflict, map[string]any{
 			"error": map[string]any{
 				"code":    "confirm_required",
-				"message": "되돌릴 수 없는 명령입니다. 확인 후 다시 보내세요.",
+				"message": lang.L("되돌릴 수 없는 명령입니다. 확인 후 다시 보내세요.", "This command can't be undone. Confirm and send it again."),
 			},
 			"risks": risks,
 		})
