@@ -1,3 +1,5 @@
+<p align="center"><img src="docs/icon.svg" width="112" alt="terminal-agent 아이콘"></p>
+
 # terminal-agent
 
 [![CI](https://github.com/foncdev/terminal-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/foncdev/terminal-agent/actions/workflows/ci.yml)
