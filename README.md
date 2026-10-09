@@ -66,6 +66,19 @@ make build          # ./terminal-agent 생성
 go install github.com/foncdev/terminal-agent/cmd/terminal-agent@latest
 ```
 
+### 맥에서 로그인할 때마다 켜기
+
+```bash
+./scripts/install.sh              # 또는 make install (빌드부터)
+./scripts/install.sh --uninstall  # 또는 make uninstall
+```
+
+`~/.local/bin/terminal-agent`(저장소에서 빌드한 것, 없으면 한 줄 설치로 깔아 둔 것)를 LaunchAgent
+`com.foncsoft.terminal-agent`로 로그인할 때마다 켠다. 설정은 `~/.config/terminal-agent/.env`(처음에
+`.env.example`로 만든다), 로그는 `~/Library/Logs/terminal-agent.log`. notify-agent·claudeAgent와 같은 규칙이다.
+
+셸을 여는 서비스라 늘 켜 두면 relay를 거쳐 밖에서 이 맥의 셸에 닿는다. 쓸 때만 켜도 되면 등록하지 않는다.
+
 ### 요구 사항
 
 - Go 1.25 이상 (빌드할 때만)
@@ -149,6 +162,10 @@ gh release create v0.1.0 dist/*.tar.gz dist/checksums.txt
 
 버전은 `git describe`에서 가져와 `-X main.version`으로 주입된다.
 `terminal-agent --version`으로 확인할 수 있다.
+
+맥용은 GitHub(리눅스 러너)에서 서명할 수 없다. 릴리스가 올라간 뒤 맥에서 `terminal-agent_darwin_*.tar.gz`를
+받아 Developer ID로 서명·공증하고(`codesign --options runtime --timestamp`, `notarytool submit`),
+다시 묶어 `checksums.txt`와 함께 `gh release upload --clobber`로 바꿔 올린다. 브라우저로 받아도 막히지 않게 하려는 것이다.
 
 ---
 

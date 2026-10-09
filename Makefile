@@ -13,7 +13,7 @@ LDFLAGS := -s -w -X main.version=$(VERSION)
 # 배포 대상. 하나만 고쳐도 dist 전체가 따라온다.
 PLATFORMS := darwin/arm64 darwin/amd64 linux/amd64 linux/arm64 windows/amd64
 
-.PHONY: build run test vet check clean dist checksums
+.PHONY: build run test vet check clean dist checksums install uninstall
 
 build:
 	go build -ldflags="$(LDFLAGS)" -o $(BIN) $(PKG)
@@ -28,6 +28,13 @@ vet:
 	go vet ./...
 
 check: vet test
+
+# 맥에 설치하고 로그인할 때마다 켜지게 한다(LaunchAgent). scripts/install.sh 참고.
+install: build
+	./scripts/install.sh
+
+uninstall:
+	./scripts/install.sh --uninstall
 
 # 전 플랫폼 바이너리를 한 번에 뽑아 tar.gz로 묶는다.
 #
